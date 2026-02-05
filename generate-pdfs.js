@@ -55,16 +55,40 @@ function getMermaidConfig() {
   return {
     theme: 'base',
     themeVariables: {
+      // Core
+      background: '#FFFFFF',
       primaryColor: c.accent,
       primaryTextColor: c.primary,
       primaryBorderColor: c.primary,
       secondaryColor: c.lightGrey,
+      secondaryTextColor: c.primary,
+      secondaryBorderColor: c.borderGrey,
+      tertiaryColor: c.secondary,
+      tertiaryTextColor: '#FFFFFF',
+      tertiaryBorderColor: c.primary,
+      // Flowchart
+      nodeBkg: c.accent,
+      nodeBorder: c.primary,
+      nodeTextColor: c.primary,
+      mainBkg: '#FFFFFF',
+      clusterBkg: c.lightGrey,
+      clusterBorder: c.primary,
       lineColor: c.primary,
       textColor: '#333333',
-      nodeBorder: c.primary,
+      titleColor: c.primary,
+      edgeLabelBackground: '#FFFFFF',
+      // Sequence
       actorBkg: c.primary,
+      actorBorder: c.primary,
       actorTextColor: '#FFFFFF',
-      noteBkgColor: c.lightGrey
+      actorLineColor: c.primary,
+      signalColor: c.primary,
+      signalTextColor: c.primary,
+      noteBkgColor: c.lightGrey,
+      noteBorderColor: c.borderGrey,
+      noteTextColor: '#333333',
+      activationBkgColor: c.accent,
+      activationBorderColor: c.primary
     },
     flowchart: { curve: 'basis', padding: 15 },
     sequence: { actorMargin: 50, messageMargin: 35 }
