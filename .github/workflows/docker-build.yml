@@ -44,6 +44,10 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,prefix=
+          labels: |
+            org.opencontainers.image.source=https://github.com/Gluendo/md2pdf
+            org.opencontainers.image.description=Markdown to PDF generator with Mermaid support
+            org.opencontainers.image.licenses=MIT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
