@@ -1,0 +1,242 @@
+/* md2pdf - PDF Theme
+ *
+ * This stylesheet uses CSS variables (--brand-*) that are injected
+ * from brand.json at build time. Customize colors in brand.json.
+ */
+
+body {
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #333;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header with logo */
+@page {
+  size: A4;
+  margin: 25mm 20mm 25mm 20mm;
+
+  @top-right {
+    font-size: 9pt;
+    color: var(--brand-primary);
+  }
+
+  @bottom-center {
+    content: counter(page);
+    font-size: 9pt;
+    color: #666;
+  }
+
+  @bottom-right {
+    font-size: 8pt;
+    color: #999;
+  }
+}
+
+/* First page styling */
+@page:first {
+  @top-right {
+    content: "";
+  }
+}
+
+/* Headings */
+h1 {
+  font-weight: 600;
+  color: var(--brand-primary);
+  font-size: 24pt;
+  border-bottom: 3px solid var(--brand-accent);
+  padding-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  page-break-after: avoid;
+}
+
+h2 {
+  font-weight: 600;
+  color: var(--brand-primary);
+  font-size: 16pt;
+  margin-top: 25px;
+  margin-bottom: 12px;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-weight: 500;
+  color: var(--brand-secondary);
+  font-size: 13pt;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  page-break-after: avoid;
+}
+
+h4 {
+  font-weight: 500;
+  color: var(--brand-primary);
+  font-size: 11pt;
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: 12px;
+  text-align: justify;
+}
+
+/* Strong text */
+strong {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+/* Links */
+a {
+  color: var(--brand-accent);
+  text-decoration: none;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 10pt;
+  page-break-inside: avoid;
+}
+
+th {
+  background-color: var(--brand-primary);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--brand-primary);
+}
+
+td {
+  padding: 8px 12px;
+  border: 1px solid var(--brand-border-grey);
+  vertical-align: top;
+}
+
+tr:nth-child(even) {
+  background-color: var(--brand-light-grey);
+}
+
+/* Lists */
+ul, ol {
+  margin: 10px 0;
+  padding-left: 25px;
+}
+
+li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+/* Nested lists */
+li ul, li ol {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* Task lists */
+li input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Blockquotes - used for callouts */
+blockquote {
+  background-color: var(--brand-light-grey);
+  border-left: 4px solid var(--brand-accent);
+  margin: 15px 0;
+  padding: 12px 20px;
+  font-style: normal;
+}
+
+blockquote strong {
+  color: var(--brand-primary);
+}
+
+/* Code blocks */
+code {
+  background-color: var(--brand-light-grey);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10pt;
+}
+
+pre {
+  background-color: #f4f4f4;
+  border: 1px solid var(--brand-border-grey);
+  border-radius: 4px;
+  padding: 15px;
+  overflow-x: auto;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Horizontal rules */
+hr {
+  border: none;
+  border-top: 2px solid var(--brand-accent);
+  margin: 25px 0;
+}
+
+/* First table (often metadata) */
+table:first-of-type {
+  margin-top: 0;
+}
+
+/* Mermaid diagrams */
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 15px auto;
+}
+
+img[src$=".svg"],
+img[src*="-mermaid-"] {
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  display: block;
+  margin: 15px auto;
+}
+
+/* Smaller diagrams for simple flowcharts */
+.mermaid {
+  text-align: center;
+  margin: 15px 0;
+}
+
+/* Print optimisations */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+  }
+
+  table, pre, blockquote {
+    page-break-inside: avoid;
+  }
+
+  a {
+    text-decoration: none;
+  }
+}

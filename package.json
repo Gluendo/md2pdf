@@ -1,0 +1,21 @@
+{
+  "name": "tom-doc-tools",
+  "version": "1.0.0",
+  "description": "PDF and PPTX generation tools for TOM documentation",
+  "scripts": {
+    "pdf:adr": "node generate-pdfs.js ../docs/ADR",
+    "pdf:docs": "node generate-pdfs.js ../docs",
+    "pdf:hld": "node generate-pdfs.js ../docs/architecture/HLD",
+    "pdf:lld": "node generate-pdfs.js ../docs/architecture/LLD",
+    "pdf:diagrams": "node generate-pdfs.js ../docs/architecture/diagrams",
+    "pdf:strategy": "node generate-pdfs.js ../docs/platform-strategy",
+    "pdf:risk": "node generate-pdfs.js ../docs/risk-register",
+    "pptx": "node generate-pptx.js",
+    "pptx:all": "node generate-pptx.js --all"
+  },
+  "dependencies": {
+    "@marp-team/marp-cli": "^3.4.0",
+    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "md-to-pdf": "^5.2.4"
+  }
+}
