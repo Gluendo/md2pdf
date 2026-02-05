@@ -20,7 +20,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DOCKER_IMAGE="md2pdf-gen"
+LOCAL_IMAGE="md2pdf-gen"
+REGISTRY_IMAGE="ghcr.io/gluendo/md2pdf:latest"
 
 # Colors for output
 RED='\033[0;31m'
@@ -38,14 +39,15 @@ show_help() {
 USAGE:
     ./md2pdf.sh <file.md>       Generate PDF for a single Markdown file
     ./md2pdf.sh <directory>     Generate PDFs for all .md files in directory
-    ./md2pdf.sh --docker        Force Docker mode (builds image if needed)
+    ./md2pdf.sh --docker        Force Docker mode (builds local image if needed)
+    ./md2pdf.sh --pull          Use pre-built image from GitHub registry
     ./md2pdf.sh --local         Force local Node.js mode
     ./md2pdf.sh --help          Show this help
 
 EXAMPLES:
     ./md2pdf.sh docs/my-document.md
     ./md2pdf.sh docs/architecture/
-    ./md2pdf.sh --docker docs/specs/
+    ./md2pdf.sh --pull docs/specs/
 
 OUTPUT:
     PDFs are saved to: output/pdf/
@@ -58,7 +60,7 @@ FEATURES:
     ✓ Syntax highlighting for code blocks
 
 CUSTOMIZATION:
-    Edit tools/brand.json to set:
+    Edit brand.json to set:
     - Company name and header text
     - Brand colors (primary, accent, secondary)
     - Footer text
@@ -81,20 +83,22 @@ has_local_setup() {
     [ -f "$SCRIPT_DIR/node_modules/.package-lock.json" ] || [ -d "$SCRIPT_DIR/node_modules/md-to-pdf" ]
 }
 
-# Build Docker image if needed
+# Build Docker image locally
 build_docker_image() {
     echo -e "${CYAN}Building Docker image (first run only)...${NC}"
-    docker build -t "$DOCKER_IMAGE" -f "$SCRIPT_DIR/docker/Dockerfile" "$SCRIPT_DIR"
+    docker build -t "$LOCAL_IMAGE" -f "$SCRIPT_DIR/docker/Dockerfile" "$SCRIPT_DIR"
+}
+
+# Pull image from GitHub registry
+pull_docker_image() {
+    echo -e "${CYAN}Pulling Docker image from registry...${NC}"
+    docker pull "$REGISTRY_IMAGE"
 }
 
 # Run with Docker
 run_docker() {
     local target="$1"
-
-    # Check if image exists
-    if ! docker image inspect "$DOCKER_IMAGE" &> /dev/null; then
-        build_docker_image
-    fi
+    local image="$2"
 
     # Ensure output directory exists
     mkdir -p "$PROJECT_ROOT/output/pdf"
@@ -109,7 +113,7 @@ run_docker() {
         -v "$SCRIPT_DIR/brand.json:/app/brand.json:ro" \
         -e OUTPUT_DIR=/output \
         -w /docs \
-        "$DOCKER_IMAGE" \
+        "$image" \
         "$target"
 }
 
@@ -146,6 +150,10 @@ main() {
                 force_mode="docker"
                 shift
                 ;;
+            --pull)
+                force_mode="pull"
+                shift
+                ;;
             --local)
                 force_mode="local"
                 shift
@@ -180,12 +188,26 @@ main() {
     fi
 
     # Choose execution mode
-    if [ "$force_mode" = "docker" ]; then
+    if [ "$force_mode" = "pull" ]; then
         if ! has_docker; then
             echo -e "${RED}Error: Docker is not available${NC}"
             exit 1
         fi
-        run_docker "$target"
+        # Pull if not present
+        if ! docker image inspect "$REGISTRY_IMAGE" &> /dev/null; then
+            pull_docker_image
+        fi
+        run_docker "$target" "$REGISTRY_IMAGE"
+    elif [ "$force_mode" = "docker" ]; then
+        if ! has_docker; then
+            echo -e "${RED}Error: Docker is not available${NC}"
+            exit 1
+        fi
+        # Build if not present
+        if ! docker image inspect "$LOCAL_IMAGE" &> /dev/null; then
+            build_docker_image
+        fi
+        run_docker "$target" "$LOCAL_IMAGE"
     elif [ "$force_mode" = "local" ]; then
         if ! command -v node &> /dev/null; then
             echo -e "${RED}Error: Node.js is not installed${NC}"
@@ -195,7 +217,20 @@ main() {
     else
         # Auto-detect best option
         if has_docker; then
-            run_docker "$target"
+            # Prefer registry image if available, else build locally
+            if docker image inspect "$REGISTRY_IMAGE" &> /dev/null; then
+                run_docker "$target" "$REGISTRY_IMAGE"
+            elif docker image inspect "$LOCAL_IMAGE" &> /dev/null; then
+                run_docker "$target" "$LOCAL_IMAGE"
+            else
+                # Try to pull, fallback to local build
+                if pull_docker_image 2>/dev/null; then
+                    run_docker "$target" "$REGISTRY_IMAGE"
+                else
+                    build_docker_image
+                    run_docker "$target" "$LOCAL_IMAGE"
+                fi
+            fi
         elif command -v node &> /dev/null; then
             run_local "$target"
         else
