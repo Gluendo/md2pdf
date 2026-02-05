@@ -1,9 +1,12 @@
 # md2pdf - Markdown to PDF Generator
-# Portable Docker image for generating PDFs from Markdown with Mermaid support
+#
+# Usage:
+#   docker run --rm -v $(pwd):/docs ghcr.io/gluendo/md2pdf README.md
+#   docker run --rm -v $(pwd):/docs -v $(pwd)/output:/output ghcr.io/gluendo/md2pdf docs/
 
 FROM node:20-slim
 
-# Install Chromium and dependencies for Puppeteer/Mermaid
+# Install Chromium and fonts for Puppeteer/Mermaid
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
@@ -12,20 +15,18 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Puppeteer to use system Chromium (for both md-to-pdf and mermaid-cli)
+# Configure Puppeteer to use system Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_PATH=/usr/bin/chromium
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Copy package files and install dependencies
+COPY package.json ./
+RUN npm install --only=production
 
-# Install dependencies
-RUN npm ci --only=production 2>/dev/null || npm install --only=production
-
-# Copy generator and config
+# Copy application files
 COPY generate-pdfs.js ./
 COPY brand.json ./
 COPY themes/ ./themes/
@@ -33,12 +34,8 @@ COPY themes/ ./themes/
 # Create Puppeteer config for mermaid-cli
 RUN echo '{"executablePath": "/usr/bin/chromium", "args": ["--no-sandbox", "--disable-setuid-sandbox"]}' > /app/puppeteer-config.json
 
-# Create directories
-RUN mkdir -p /docs /output
-
-# Set working directory for docs
+# Set working directory for input docs
 WORKDIR /docs
 
-# Default command: show help
 ENTRYPOINT ["node", "/app/generate-pdfs.js"]
 CMD ["--help"]

@@ -2,14 +2,7 @@
 
 /**
  * md2pdf - Markdown to PDF Generator
- *
- * Usage:
- *   node generate-pdfs.js <directory>    Generate PDFs for all .md files in directory
- *   node generate-pdfs.js <file.md>      Generate PDF for a single file
- *
- * Features:
- *   - Converts Mermaid diagrams to SVG before PDF generation
- *   - Applies customizable branding via brand.json
+ * Converts Markdown files to PDF with Mermaid diagram support
  */
 
 const { mdToPdf } = require('md-to-pdf');
@@ -18,16 +11,17 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Configuration paths
-const BRAND_CONFIG = path.join(__dirname, 'brand.json');
-const CSS_PATH = path.join(__dirname, 'themes', 'pdf-theme.css');
-const PUPPETEER_CONFIG = path.join(__dirname, 'puppeteer-config.json');
-const OUTPUT_DIR = process.env.OUTPUT_DIR || path.join(__dirname, '..', 'output', 'pdf');
-const TEMP_DIR = path.join(os.tmpdir(), 'md2pdf-' + Date.now());
+// Paths
+const APP_DIR = '/app';
+const BRAND_PATH = process.env.BRAND_FILE || path.join(APP_DIR, 'brand.json');
+const CSS_PATH = path.join(APP_DIR, 'themes', 'pdf-theme.css');
+const PUPPETEER_CONFIG = path.join(APP_DIR, 'puppeteer-config.json');
+const OUTPUT_DIR = process.env.OUTPUT_DIR || '/output';
+const TEMP_DIR = path.join(os.tmpdir(), `md2pdf-${Date.now()}`);
 
-// Load brand configuration
-function loadBrandConfig() {
-  const defaultBrand = {
+// Load brand config with defaults
+function loadBrand() {
+  const defaults = {
     name: 'Document',
     header: '',
     footer: '',
@@ -39,377 +33,209 @@ function loadBrandConfig() {
       lightGrey: '#f7fafc',
       borderGrey: '#e2e8f0'
     },
-    font: {
-      family: 'system-ui, -apple-system, sans-serif',
-      url: null
-    }
+    font: { family: 'system-ui, -apple-system, sans-serif', url: null }
   };
 
-  if (fs.existsSync(BRAND_CONFIG)) {
+  if (fs.existsSync(BRAND_PATH)) {
     try {
-      const brand = JSON.parse(fs.readFileSync(BRAND_CONFIG, 'utf-8'));
-      return { ...defaultBrand, ...brand, colors: { ...defaultBrand.colors, ...brand.colors } };
+      const brand = JSON.parse(fs.readFileSync(BRAND_PATH, 'utf-8'));
+      return { ...defaults, ...brand, colors: { ...defaults.colors, ...brand.colors } };
     } catch (e) {
       console.warn('Warning: Could not parse brand.json, using defaults');
     }
   }
-  return defaultBrand;
+  return defaults;
 }
 
-const brand = loadBrandConfig();
+const brand = loadBrand();
 
-// Generate Mermaid config from brand colors
-function generateMermaidConfig() {
+// Generate Mermaid theme config from brand colors
+function getMermaidConfig() {
   const c = brand.colors;
   return {
     theme: 'base',
     themeVariables: {
-      // Core colors
       primaryColor: c.accent,
       primaryTextColor: c.primary,
       primaryBorderColor: c.primary,
       secondaryColor: c.lightGrey,
-      secondaryTextColor: c.primary,
-      secondaryBorderColor: c.primary,
-      tertiaryColor: c.secondary,
-      tertiaryTextColor: '#FFFFFF',
-      tertiaryBorderColor: c.primary,
       lineColor: c.primary,
       textColor: '#333333',
-      mainBkg: '#FFFFFF',
       nodeBorder: c.primary,
-      clusterBkg: c.lightGrey,
-      clusterBorder: c.primary,
-      titleColor: c.primary,
-      edgeLabelBackground: '#FFFFFF',
-      nodeTextColor: c.primary,
-      // Sequence diagrams
       actorBkg: c.primary,
-      actorBorder: c.primary,
       actorTextColor: '#FFFFFF',
-      actorLineColor: c.primary,
-      signalColor: c.primary,
-      signalTextColor: c.primary,
-      labelBoxBkgColor: c.accent,
-      labelBoxBorderColor: c.primary,
-      labelTextColor: c.primary,
-      loopTextColor: c.primary,
-      noteBorderColor: c.secondary,
-      noteBkgColor: c.lightGrey,
-      noteTextColor: '#333333',
-      activationBorderColor: c.primary,
-      activationBkgColor: c.accent,
-      sequenceNumberColor: '#FFFFFF',
-      // Gantt charts
-      sectionBkgColor: c.accent,
-      altSectionBkgColor: c.lightGrey,
-      sectionBkgColor2: c.secondary,
-      taskBorderColor: c.primary,
-      taskBkgColor: c.accent,
-      taskTextColor: c.primary,
-      taskTextLightColor: c.primary,
-      taskTextOutsideColor: '#333333',
-      taskTextClickableColor: c.primary,
-      activeTaskBorderColor: c.primary,
-      activeTaskBkgColor: c.secondary,
-      gridColor: c.borderGrey,
-      doneTaskBkgColor: c.secondary,
-      doneTaskBorderColor: c.primary,
-      critBorderColor: c.warning,
-      critBkgColor: c.warning,
-      todayLineColor: c.warning,
-      // C4 diagrams
-      personBorder: c.primary,
-      personBkg: c.accent,
-      containerBorder: c.primary,
-      containerBkg: c.accent,
-      container_bgColor: c.accent,
-      container_borderColor: c.primary,
-      external_container_bgColor: c.lightGrey,
-      external_container_borderColor: '#999999',
-      component_bgColor: c.accent,
-      component_borderColor: c.primary,
-      external_component_bgColor: c.lightGrey,
-      external_component_borderColor: '#999999',
-      person_bgColor: c.primary,
-      person_borderColor: c.primary,
-      external_person_bgColor: '#999999',
-      external_person_borderColor: '#999999',
-      system_bgColor: c.primary,
-      system_borderColor: c.primary,
-      external_system_bgColor: '#999999',
-      external_system_borderColor: '#999999'
+      noteBkgColor: c.lightGrey
     },
-    flowchart: {
-      curve: 'basis',
-      padding: 15,
-      nodeSpacing: 50,
-      rankSpacing: 50
-    },
-    sequence: {
-      diagramMarginX: 50,
-      diagramMarginY: 10,
-      actorMargin: 50,
-      width: 150,
-      height: 65,
-      boxMargin: 10,
-      boxTextMargin: 5,
-      noteMargin: 10,
-      messageMargin: 35
-    },
-    c4: {
-      personFontSize: 14,
-      personFontWeight: 'normal',
-      systemFontSize: 14,
-      systemFontWeight: 'normal',
-      containerFontSize: 14,
-      containerFontWeight: 'normal',
-      componentFontSize: 14,
-      componentFontWeight: 'normal',
-      c4ShapeInRow: 4,
-      c4BoundaryInRow: 2
-    }
+    flowchart: { curve: 'basis', padding: 15 },
+    sequence: { actorMargin: 50, messageMargin: 35 }
   };
 }
 
-// Generate CSS variables from brand config
-function generateBrandCSS() {
+// Generate CSS variables from brand
+function getBrandCSS() {
   let css = ':root {\n';
-  css += `  --brand-primary: ${brand.colors.primary};\n`;
-  css += `  --brand-accent: ${brand.colors.accent};\n`;
-  css += `  --brand-secondary: ${brand.colors.secondary};\n`;
-  css += `  --brand-warning: ${brand.colors.warning};\n`;
-  css += `  --brand-light-grey: ${brand.colors.lightGrey};\n`;
-  css += `  --brand-border-grey: ${brand.colors.borderGrey};\n`;
+  Object.entries(brand.colors).forEach(([key, val]) => {
+    css += `  --brand-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${val};\n`;
+  });
   css += '}\n';
-
-  if (brand.font.url) {
-    css = `@import url('${brand.font.url}');\n\n` + css;
-  }
-
+  if (brand.font.url) css = `@import url('${brand.font.url}');\n\n` + css;
   return css;
 }
 
-// Generate datetime suffix: YYYYMMDD-HHmm
-function getDateTimeSuffix() {
+// Get timestamp suffix for output files
+function getTimestamp() {
   const now = new Date();
-  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const time = now.toTimeString().slice(0, 5).replace(':', '');
-  return `${date}-${time}`;
+  return now.toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/(\d{8})(\d{4})/, '$1-$2');
 }
 
-// Check if file contains Mermaid code blocks
+// Check if file has Mermaid blocks
 function hasMermaid(filePath) {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return content.includes('```mermaid');
+  return fs.readFileSync(filePath, 'utf-8').includes('```mermaid');
 }
 
-// Pre-process markdown with mermaid-cli to convert diagrams to SVG
-function preprocessMermaid(inputPath, mermaidConfigPath) {
-  const fileName = path.basename(inputPath);
-  const outputPath = path.join(TEMP_DIR, fileName);
-
+// Pre-process Mermaid diagrams to SVG
+function processMermaid(inputPath, configPath) {
+  const outputPath = path.join(TEMP_DIR, path.basename(inputPath));
   try {
-    // Build mmdc command with generated config
-    let mmCmd = `npx mmdc -i "${inputPath}" -o "${outputPath}" -a "${TEMP_DIR}/" -q`;
-    mmCmd += ` -c "${mermaidConfigPath}"`;
-
-    // Add puppeteer config if it exists (needed for Docker)
-    if (fs.existsSync(PUPPETEER_CONFIG)) {
-      mmCmd += ` -p "${PUPPETEER_CONFIG}"`;
-    }
-
-    // Run mmdc to convert Mermaid blocks to SVG
-    execSync(mmCmd, { cwd: __dirname, stdio: 'pipe' });
+    let cmd = `npx mmdc -i "${inputPath}" -o "${outputPath}" -a "${TEMP_DIR}/" -q -c "${configPath}"`;
+    if (fs.existsSync(PUPPETEER_CONFIG)) cmd += ` -p "${PUPPETEER_CONFIG}"`;
+    execSync(cmd, { cwd: APP_DIR, stdio: 'pipe' });
     return outputPath;
-  } catch (error) {
-    console.error(`  ⚠ Mermaid preprocessing failed, using original file`);
+  } catch {
+    console.error('  ⚠ Mermaid processing failed, using original');
     return inputPath;
   }
 }
 
-// Build PDF options with brand config
-function buildPdfOptions() {
-  const fontFamily = brand.font.family || 'system-ui, -apple-system, sans-serif';
+// Build PDF generation options
+function getPdfOptions() {
+  const fontFamily = brand.font.family;
+  const fontName = fontFamily.split(',')[0].replace(/'/g, '').trim();
 
   return {
     stylesheet: CSS_PATH,
-    css: `
-      ${generateBrandCSS()}
-
-      body {
-        font-family: '${fontFamily.split(',')[0].replace(/'/g, '')}', ${fontFamily};
-      }
-
-      /* SVG diagram styling */
-      img[src$=".svg"] {
-        display: block;
-        margin: 20px auto;
-        max-width: 100%;
-      }
-    `,
+    css: `${getBrandCSS()}\nbody { font-family: '${fontName}', ${fontFamily}; }\nimg[src$=".svg"] { display: block; margin: 20px auto; max-width: 100%; }`,
     pdf_options: {
       format: 'A4',
-      margin: {
-        top: '25mm',
-        right: '20mm',
-        bottom: '25mm',
-        left: '20mm'
-      },
+      margin: { top: '25mm', right: '20mm', bottom: '25mm', left: '20mm' },
       printBackground: true,
       displayHeaderFooter: true,
-      headerTemplate: `
-        <div style="width: 100%; font-size: 9px; font-family: '${fontFamily.split(',')[0].replace(/'/g, '')}', Arial, sans-serif; padding: 0 20mm;">
-          <div style="float: right; color: ${brand.colors.primary};">
-            <strong>${brand.header || brand.name}</strong>
-          </div>
-        </div>
-      `,
-      footerTemplate: `
-        <div style="width: 100%; font-size: 9px; font-family: '${fontFamily.split(',')[0].replace(/'/g, '')}', Arial, sans-serif; padding: 0 20mm; display: flex; justify-content: space-between;">
-          <span style="color: #999;">${brand.footer || ''}</span>
-          <span style="color: #666;">Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>
-        </div>
-      `
+      headerTemplate: `<div style="width:100%;font-size:9px;font-family:'${fontName}',sans-serif;padding:0 20mm;text-align:right;color:${brand.colors.primary}"><strong>${brand.header || brand.name}</strong></div>`,
+      footerTemplate: `<div style="width:100%;font-size:9px;font-family:'${fontName}',sans-serif;padding:0 20mm;display:flex;justify-content:space-between"><span style="color:#999">${brand.footer}</span><span style="color:#666">Page <span class="pageNumber"></span>/<span class="totalPages"></span></span></div>`
     },
-    launch_options: {
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+    launch_options: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
   };
 }
 
-async function generatePdf(inputPath, dateSuffix, pdfOptions, mermaidConfigPath) {
-  const fileName = path.basename(inputPath, '.md');
-  const outputPath = path.join(OUTPUT_DIR, `${fileName}_${dateSuffix}.pdf`);
+// Convert a single file to PDF
+async function convertFile(inputPath, timestamp, pdfOptions, mermaidConfig) {
+  const name = path.basename(inputPath, '.md');
+  const outputPath = path.join(OUTPUT_DIR, `${name}_${timestamp}.pdf`);
 
-  console.log(`  Converting: ${path.basename(inputPath)} -> ${fileName}.pdf`);
+  console.log(`  ${path.basename(inputPath)}`);
 
   let processedPath = inputPath;
-
-  // Pre-process Mermaid diagrams if present
   if (hasMermaid(inputPath)) {
-    console.log(`    → Processing Mermaid diagrams...`);
-    processedPath = preprocessMermaid(inputPath, mermaidConfigPath);
+    console.log('    → Processing Mermaid diagrams...');
+    processedPath = processMermaid(inputPath, mermaidConfig);
   }
 
   try {
-    const pdf = await mdToPdf(
-      { path: processedPath },
-      pdfOptions
-    );
-
+    const pdf = await mdToPdf({ path: processedPath }, pdfOptions);
     if (pdf) {
       fs.writeFileSync(outputPath, pdf.content);
-      console.log(`  ✓ Generated: ${outputPath}`);
+      console.log(`    ✓ ${outputPath}`);
       return true;
     }
-  } catch (error) {
-    console.error(`  ✗ Error converting ${inputPath}:`, error.message);
-    return false;
+  } catch (err) {
+    console.error(`    ✗ Error: ${err.message}`);
   }
+  return false;
 }
 
-// Clean up temp directory
-function cleanup() {
-  if (fs.existsSync(TEMP_DIR)) {
-    fs.rmSync(TEMP_DIR, { recursive: true, force: true });
-  }
+// Show help
+function showHelp() {
+  console.log(`
+md2pdf - Markdown to PDF Generator
+
+Usage:
+  docker run --rm -v $(pwd):/docs -v $(pwd)/output:/output ghcr.io/gluendo/md2pdf <file.md|directory>
+
+Examples:
+  # Convert a single file
+  docker run --rm -v $(pwd):/docs -v $(pwd)/output:/output ghcr.io/gluendo/md2pdf README.md
+
+  # Convert all .md files in docs/
+  docker run --rm -v $(pwd):/docs -v $(pwd)/output:/output ghcr.io/gluendo/md2pdf docs/
+
+  # Use custom branding
+  docker run --rm -v $(pwd):/docs -v $(pwd)/output:/output -v $(pwd)/brand.json:/app/brand.json ghcr.io/gluendo/md2pdf doc.md
+
+Output: output/<filename>_YYYYMMDD-HHmm.pdf
+`);
 }
 
-// Center text in a box
-function centerText(text, width) {
-  const padding = Math.max(0, width - text.length);
-  const leftPad = Math.floor(padding / 2);
-  const rightPad = padding - leftPad;
-  return ' '.repeat(leftPad) + text + ' '.repeat(rightPad);
-}
-
+// Main
 async function main() {
   const target = process.argv[2];
 
-  if (!target) {
-    console.log('Usage: node generate-pdfs.js <directory|file.md>');
-    console.log('');
-    console.log('Examples:');
-    console.log('  node generate-pdfs.js ../docs         # All docs');
-    console.log('  node generate-pdfs.js ../README.md    # Single file');
+  if (!target || target === '--help' || target === '-h') {
+    showHelp();
+    process.exit(target ? 0 : 1);
+  }
+
+  const targetPath = path.isAbsolute(target) ? target : path.resolve(process.cwd(), target);
+
+  if (!fs.existsSync(targetPath)) {
+    console.error(`Error: Not found: ${target}`);
     process.exit(1);
   }
 
-  // Resolve path: if absolute, use as-is; if relative, resolve from cwd (not __dirname)
-  // This allows Docker to work with paths relative to /docs mount point
-  const targetPath = path.isAbsolute(target) ? target : path.resolve(process.cwd(), target);
+  // Setup
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-  // Ensure output directory exists
-  if (!fs.existsSync(OUTPUT_DIR)) {
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-    console.log(`Created output directory: ${OUTPUT_DIR}`);
-  }
+  const mermaidConfig = path.join(TEMP_DIR, 'mermaid.json');
+  fs.writeFileSync(mermaidConfig, JSON.stringify(getMermaidConfig()));
 
-  // Create temp directory for Mermaid processing
-  if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR, { recursive: true });
-  }
+  const pdfOptions = getPdfOptions();
+  const timestamp = getTimestamp();
 
-  // Generate Mermaid config from brand colors
-  const mermaidConfigPath = path.join(TEMP_DIR, 'mermaid-config.json');
-  fs.writeFileSync(mermaidConfigPath, JSON.stringify(generateMermaidConfig(), null, 2));
-
-  // Build PDF options with brand config
-  const pdfOptions = buildPdfOptions();
-
-  // Display banner
-  const title = `${brand.name} - PDF Generator`;
-  const boxWidth = Math.max(60, title.length + 8);
-
-  console.log('');
-  console.log('╔' + '═'.repeat(boxWidth) + '╗');
-  console.log('║' + centerText(title, boxWidth) + '║');
-  console.log('╚' + '═'.repeat(boxWidth) + '╝');
-  console.log('');
-
+  // Get files to process
   const stats = fs.statSync(targetPath);
   let files = [];
 
   if (stats.isDirectory()) {
-    // Get all .md files in directory, excluding templates and READMEs
-    const allFiles = fs.readdirSync(targetPath);
-    files = allFiles
-      .filter(f => f.endsWith('.md'))
-      .filter(f => !f.includes('template') && !f.toLowerCase().includes('readme'))
+    files = fs.readdirSync(targetPath)
+      .filter(f => f.endsWith('.md') && !f.toLowerCase().includes('readme'))
       .map(f => path.join(targetPath, f));
-
-    console.log(`Found ${files.length} markdown files in ${target}`);
-    console.log('');
   } else if (targetPath.endsWith('.md')) {
     files = [targetPath];
   } else {
-    console.error('Error: Target must be a directory or .md file');
+    console.error('Error: Target must be a .md file or directory');
     process.exit(1);
   }
 
-  let success = 0;
-  let failed = 0;
-  const dateSuffix = getDateTimeSuffix();
-
-  for (const file of files) {
-    const result = await generatePdf(file, dateSuffix, pdfOptions, mermaidConfigPath);
-    if (result) success++;
-    else failed++;
+  if (files.length === 0) {
+    console.log('No markdown files found');
+    process.exit(0);
   }
 
-  // Clean up temp files
-  cleanup();
+  // Process files
+  console.log(`\n📄 Converting ${files.length} file(s)...\n`);
 
-  console.log('');
-  console.log('─'.repeat(boxWidth + 2));
-  console.log(`Done! ${success} generated, ${failed} failed`);
-  console.log(`Output: ${OUTPUT_DIR}`);
-  console.log('');
+  let success = 0;
+  for (const file of files) {
+    if (await convertFile(file, timestamp, pdfOptions, mermaidConfig)) success++;
+  }
+
+  // Cleanup
+  fs.rmSync(TEMP_DIR, { recursive: true, force: true });
+
+  console.log(`\n✓ Done: ${success}/${files.length} converted\n`);
 }
 
-main().catch((error) => {
-  cleanup();
-  console.error(error);
+main().catch(err => {
+  console.error(err);
   process.exit(1);
 });
