@@ -140,7 +140,7 @@ function processMermaid(inputPath, configPath) {
     try {
       let cmd = `npx mmdc -i "${mmdFile}" -o "${svgFile}" -q -c "${configPath}"`;
       if (fs.existsSync(PUPPETEER_CONFIG)) cmd += ` -p "${PUPPETEER_CONFIG}"`;
-      execSync(cmd, { cwd: APP_DIR, stdio: 'pipe', timeout: 60000 });
+      execSync(cmd, { cwd: APP_DIR, stdio: 'pipe', timeout: 120000 });
 
       if (fs.existsSync(svgFile)) {
         processed = processed.replace(match[0], `![](${svgFile})`);
