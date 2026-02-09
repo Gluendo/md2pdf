@@ -3,10 +3,12 @@
 /**
  * md2pdf - Markdown to PDF Generator
  * Converts Markdown files to PDF with Mermaid diagram support
+ *
+ * Architecture: Launches a single Puppeteer browser instance at startup
+ * and reuses it for all Mermaid diagram rendering across all files.
  */
 
 const { mdToPdf } = require('md-to-pdf');
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -117,47 +119,42 @@ function hasMermaid(filePath) {
   return fs.readFileSync(filePath, 'utf-8').includes('```mermaid');
 }
 
-// Pre-process Mermaid diagrams to SVG (one at a time to avoid Puppeteer timeouts)
-function processMermaid(inputPath, configPath) {
+// Pre-process Mermaid diagrams to SVG using a shared browser instance
+async function processMermaid(inputPath, mermaidConfig, renderMermaid, browser) {
   const content = fs.readFileSync(inputPath, 'utf-8');
   const baseName = path.basename(inputPath, '.md');
 
-  // Extract mermaid blocks and process each individually
   const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
-  let match;
-  let idx = 0;
+  const matches = [...content.matchAll(mermaidRegex)];
+
+  if (matches.length === 0) return inputPath;
+
   let processed = content;
   let successCount = 0;
   let failCount = 0;
 
-  while ((match = mermaidRegex.exec(content)) !== null) {
-    idx++;
-    const mmdFile = path.join(TEMP_DIR, `${baseName}-${idx}.mmd`);
-    const svgFile = path.join(TEMP_DIR, `${baseName}-${idx}.svg`);
-
-    fs.writeFileSync(mmdFile, match[1]);
+  for (let idx = 0; idx < matches.length; idx++) {
+    const match = matches[idx];
+    const definition = match[1].trim();
+    const svgName = `${baseName}-${idx + 1}.svg`;
+    const svgPath = path.join(TEMP_DIR, svgName);
 
     try {
-      let cmd = `npx mmdc -i "${mmdFile}" -o "${svgFile}" -q -c "${configPath}"`;
-      if (fs.existsSync(PUPPETEER_CONFIG)) cmd += ` -p "${PUPPETEER_CONFIG}"`;
-      execSync(cmd, { cwd: APP_DIR, stdio: 'pipe', timeout: 300000 });
-
-      if (fs.existsSync(svgFile)) {
-        processed = processed.replace(match[0], `![](${path.basename(svgFile)})`);
-        successCount++;
-      } else {
-        failCount++;
-      }
+      const { data } = await renderMermaid(browser, definition, 'svg', {
+        mermaidConfig,
+        backgroundColor: 'white'
+      });
+      fs.writeFileSync(svgPath, data);
+      processed = processed.replace(match[0], `![](${svgName})`);
+      successCount++;
     } catch (e) {
-      console.error(`    ⚠ Diagram ${idx} failed: ${e.message ? e.message.split('\n')[0] : 'unknown error'}`);
+      console.error(`    ⚠ Diagram ${idx + 1} failed: ${e.message ? e.message.split('\n')[0] : 'unknown error'}`);
       failCount++;
     }
   }
 
-  if (idx === 0) return inputPath;
-
   if (failCount > 0) {
-    console.error(`    ⚠ ${failCount}/${idx} diagram(s) failed`);
+    console.error(`    ⚠ ${failCount}/${matches.length} diagram(s) failed`);
   }
   if (successCount > 0) {
     const outputPath = path.join(TEMP_DIR, path.basename(inputPath));
@@ -189,7 +186,7 @@ function getPdfOptions() {
 }
 
 // Convert a single file to PDF
-async function convertFile(inputPath, timestamp, pdfOptions, mermaidConfig) {
+async function convertFile(inputPath, timestamp, pdfOptions, mermaidConfig, renderMermaid, browser) {
   const name = path.basename(inputPath, '.md');
   const outputPath = path.join(OUTPUT_DIR, `${name}_${timestamp}.pdf`);
 
@@ -198,7 +195,7 @@ async function convertFile(inputPath, timestamp, pdfOptions, mermaidConfig) {
   let processedPath = inputPath;
   if (hasMermaid(inputPath)) {
     console.log('    → Processing Mermaid diagrams...');
-    processedPath = processMermaid(inputPath, mermaidConfig);
+    processedPath = await processMermaid(inputPath, mermaidConfig, renderMermaid, browser);
   }
 
   try {
@@ -256,9 +253,7 @@ async function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-  const mermaidConfig = path.join(TEMP_DIR, 'mermaid.json');
-  fs.writeFileSync(mermaidConfig, JSON.stringify(getMermaidConfig()));
-
+  const mermaidConfig = getMermaidConfig();
   const pdfOptions = getPdfOptions();
   const timestamp = getTimestamp();
 
@@ -282,12 +277,36 @@ async function main() {
     process.exit(0);
   }
 
+  // Check if any file has mermaid diagrams
+  const needsMermaid = files.some(f => hasMermaid(f));
+
+  // Launch a single shared browser for all mermaid rendering
+  let browser;
+  let renderMermaid;
+  if (needsMermaid) {
+    const puppeteer = await import('puppeteer');
+    const mermaidCli = await import('@mermaid-js/mermaid-cli');
+    renderMermaid = mermaidCli.renderMermaid;
+
+    // Load puppeteer config
+    let launchOptions = { headless: 'shell' };
+    if (fs.existsSync(PUPPETEER_CONFIG)) {
+      Object.assign(launchOptions, JSON.parse(fs.readFileSync(PUPPETEER_CONFIG, 'utf-8')));
+    }
+
+    browser = await puppeteer.default.launch(launchOptions);
+  }
+
   // Process files
   console.log(`\n📄 Converting ${files.length} file(s)...\n`);
 
   let success = 0;
-  for (const file of files) {
-    if (await convertFile(file, timestamp, pdfOptions, mermaidConfig)) success++;
+  try {
+    for (const file of files) {
+      if (await convertFile(file, timestamp, pdfOptions, mermaidConfig, renderMermaid, browser)) success++;
+    }
+  } finally {
+    await browser?.close?.();
   }
 
   // Cleanup
