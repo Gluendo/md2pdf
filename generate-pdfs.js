@@ -117,18 +117,55 @@ function hasMermaid(filePath) {
   return fs.readFileSync(filePath, 'utf-8').includes('```mermaid');
 }
 
-// Pre-process Mermaid diagrams to SVG
+// Pre-process Mermaid diagrams to SVG (one at a time to avoid Puppeteer timeouts)
 function processMermaid(inputPath, configPath) {
-  const outputPath = path.join(TEMP_DIR, path.basename(inputPath));
-  try {
-    let cmd = `npx mmdc -i "${inputPath}" -o "${outputPath}" -a "${TEMP_DIR}/" -q -c "${configPath}"`;
-    if (fs.existsSync(PUPPETEER_CONFIG)) cmd += ` -p "${PUPPETEER_CONFIG}"`;
-    execSync(cmd, { cwd: APP_DIR, stdio: 'pipe' });
-    return outputPath;
-  } catch {
-    console.error('  ⚠ Mermaid processing failed, using original');
-    return inputPath;
+  const content = fs.readFileSync(inputPath, 'utf-8');
+  const baseName = path.basename(inputPath, '.md');
+
+  // Extract mermaid blocks and process each individually
+  const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
+  let match;
+  let idx = 0;
+  let processed = content;
+  let successCount = 0;
+  let failCount = 0;
+
+  while ((match = mermaidRegex.exec(content)) !== null) {
+    idx++;
+    const mmdFile = path.join(TEMP_DIR, `${baseName}-${idx}.mmd`);
+    const svgFile = path.join(TEMP_DIR, `${baseName}-${idx}.svg`);
+
+    fs.writeFileSync(mmdFile, match[1]);
+
+    try {
+      let cmd = `npx mmdc -i "${mmdFile}" -o "${svgFile}" -q -c "${configPath}"`;
+      if (fs.existsSync(PUPPETEER_CONFIG)) cmd += ` -p "${PUPPETEER_CONFIG}"`;
+      execSync(cmd, { cwd: APP_DIR, stdio: 'pipe', timeout: 60000 });
+
+      if (fs.existsSync(svgFile)) {
+        processed = processed.replace(match[0], `![](${svgFile})`);
+        successCount++;
+      } else {
+        failCount++;
+      }
+    } catch (e) {
+      console.error(`    ⚠ Diagram ${idx} failed: ${e.message ? e.message.split('\n')[0] : 'unknown error'}`);
+      failCount++;
+    }
   }
+
+  if (idx === 0) return inputPath;
+
+  if (failCount > 0) {
+    console.error(`    ⚠ ${failCount}/${idx} diagram(s) failed`);
+  }
+  if (successCount > 0) {
+    const outputPath = path.join(TEMP_DIR, path.basename(inputPath));
+    fs.writeFileSync(outputPath, processed);
+    return outputPath;
+  }
+
+  return inputPath;
 }
 
 // Build PDF generation options

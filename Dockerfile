@@ -32,7 +32,7 @@ COPY brand.json ./
 COPY themes/ ./themes/
 
 # Create Puppeteer config for mermaid-cli
-RUN echo '{"executablePath": "/usr/bin/chromium", "args": ["--no-sandbox", "--disable-setuid-sandbox"]}' > /app/puppeteer-config.json
+RUN echo '{"executablePath": "/usr/bin/chromium", "protocolTimeout": 120000, "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]}' > /app/puppeteer-config.json
 
 # Set working directory for input docs
 WORKDIR /docs
