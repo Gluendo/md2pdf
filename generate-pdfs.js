@@ -143,7 +143,7 @@ function processMermaid(inputPath, configPath) {
       execSync(cmd, { cwd: APP_DIR, stdio: 'pipe', timeout: 120000 });
 
       if (fs.existsSync(svgFile)) {
-        processed = processed.replace(match[0], `![](${svgFile})`);
+        processed = processed.replace(match[0], `![](${path.basename(svgFile)})`);
         successCount++;
       } else {
         failCount++;
