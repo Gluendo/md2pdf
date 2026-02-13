@@ -179,7 +179,8 @@ function getPdfOptions() {
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: `<div style="width:100%;font-size:9px;font-family:'${fontName}',sans-serif;padding:0 20mm;text-align:right;color:${brand.colors.primary}"><strong>${brand.header || brand.name}</strong></div>`,
-      footerTemplate: `<div style="width:100%;font-size:9px;font-family:'${fontName}',sans-serif;padding:0 20mm;display:flex;justify-content:space-between"><span style="color:#999">${brand.footer}</span><span style="color:#666">Page <span class="pageNumber"></span>/<span class="totalPages"></span></span></div>`
+      footerTemplate: `<div style="width:100%;font-size:9px;font-family:'${fontName}',sans-serif;padding:0 20mm;display:flex;justify-content:space-between"><span style="color:#999">${brand.footer}</span><span style="color:#666">Page <span class="pageNumber"></span>/<span class="totalPages"></span></span></div>`,
+      outline: true
     },
     launch_options: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
   };
