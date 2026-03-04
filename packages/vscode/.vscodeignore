@@ -1,6 +1,5 @@
-.vscode/**
-src/**
-tsconfig.json
-esbuild.mjs
-**/*.ts
-**/*.map
+**
+!dist/**
+!dist/resources/**
+!package.json
+!LICENSE

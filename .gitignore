@@ -3,3 +3,4 @@ package-lock.json
 output/
 .DS_Store
 .claude
+.env

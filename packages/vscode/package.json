@@ -1,152 +1,157 @@
 {
-  "name": "md2pdf",
-  "displayName": "MD2PDF",
-  "description": "Convert Markdown to branded PDF with Mermaid diagram support",
-  "version": "0.1.0",
-  "publisher": "gluendo",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "md2pdf.convertToPdf",
-        "title": "Convert Markdown to PDF",
-        "category": "MD2PDF",
-        "icon": "$(file-pdf)"
-      }
-    ],
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "md2pdf.convertToPdf",
-          "when": "resourceLangId == markdown"
-        }
-      ],
-      "editor/context": [
-        {
-          "command": "md2pdf.convertToPdf",
-          "when": "resourceLangId == markdown",
-          "group": "1_md2pdf"
-        }
-      ],
-      "editor/title": [
-        {
-          "command": "md2pdf.convertToPdf",
-          "when": "resourceLangId == markdown",
-          "group": "navigation"
-        }
-      ],
-      "explorer/context": [
-        {
-          "command": "md2pdf.convertToPdf",
-          "when": "resourceExtname == .md",
-          "group": "1_md2pdf"
-        }
-      ]
+    "name": "md2pdf",
+    "displayName": "MD2PDF",
+    "description": "Convert Markdown to branded PDF with Mermaid diagram support",
+    "version": "0.1.0",
+    "publisher": "gluendo",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gluendo/md2pdf"
     },
-    "configuration": {
-      "title": "MD2PDF",
-      "properties": {
-        "md2pdf.chromePath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to Chrome/Chromium executable. Leave empty for auto-detection."
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "md2pdf.convertToPdf",
+                "title": "Convert Markdown to PDF",
+                "category": "MD2PDF",
+                "icon": "$(file-pdf)"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "md2pdf.convertToPdf",
+                    "when": "resourceLangId == markdown"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "md2pdf.convertToPdf",
+                    "when": "resourceLangId == markdown",
+                    "group": "1_md2pdf"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "md2pdf.convertToPdf",
+                    "when": "resourceLangId == markdown",
+                    "group": "navigation"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "md2pdf.convertToPdf",
+                    "when": "resourceExtname == .md",
+                    "group": "1_md2pdf"
+                }
+            ]
         },
-        "md2pdf.brand.name": {
-          "type": "string",
-          "default": "Document",
-          "description": "Company/brand name used in document metadata."
-        },
-        "md2pdf.brand.header": {
-          "type": "string",
-          "default": "",
-          "description": "Text displayed in the PDF header (right-aligned). Defaults to brand name if empty."
-        },
-        "md2pdf.brand.footer": {
-          "type": "string",
-          "default": "",
-          "description": "Text displayed in the PDF footer (left side)."
-        },
-        "md2pdf.brand.colors.primary": {
-          "type": "string",
-          "default": "#1a365d",
-          "format": "color",
-          "description": "Primary brand color (headings, strong text, table headers)."
-        },
-        "md2pdf.brand.colors.accent": {
-          "type": "string",
-          "default": "#3182ce",
-          "format": "color",
-          "description": "Accent color (links, blockquote borders, horizontal rules)."
-        },
-        "md2pdf.brand.colors.secondary": {
-          "type": "string",
-          "default": "#2c7a7b",
-          "format": "color",
-          "description": "Secondary color (H3 headings)."
-        },
-        "md2pdf.brand.colors.warning": {
-          "type": "string",
-          "default": "#c53030",
-          "format": "color",
-          "description": "Warning color."
-        },
-        "md2pdf.brand.colors.lightGrey": {
-          "type": "string",
-          "default": "#f7fafc",
-          "format": "color",
-          "description": "Light grey background (alternating table rows, blockquotes, inline code)."
-        },
-        "md2pdf.brand.colors.borderGrey": {
-          "type": "string",
-          "default": "#e2e8f0",
-          "format": "color",
-          "description": "Border grey (table borders, code block borders)."
-        },
-        "md2pdf.brand.font.family": {
-          "type": "string",
-          "default": "system-ui, -apple-system, sans-serif",
-          "description": "Font family for the PDF body text."
-        },
-        "md2pdf.brand.font.url": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "URL to import a web font (e.g., Google Fonts URL)."
-        },
-        "md2pdf.outputDirectory": {
-          "type": "string",
-          "default": "",
-          "description": "Directory for output PDFs. Leave empty to save next to the source file."
-        },
-        "md2pdf.timestampSuffix": {
-          "type": "boolean",
-          "default": true,
-          "description": "Append timestamp (YYYYMMDD-HHmm) to output filename."
+        "configuration": {
+            "title": "MD2PDF",
+            "properties": {
+                "md2pdf.chromePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to Chrome/Chromium executable. Leave empty for auto-detection."
+                },
+                "md2pdf.brand.name": {
+                    "type": "string",
+                    "default": "Document",
+                    "description": "Company/brand name used in document metadata."
+                },
+                "md2pdf.brand.header": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Text displayed in the PDF header (right-aligned). Defaults to brand name if empty."
+                },
+                "md2pdf.brand.footer": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Text displayed in the PDF footer (left side)."
+                },
+                "md2pdf.brand.colors.primary": {
+                    "type": "string",
+                    "default": "#1a365d",
+                    "format": "color",
+                    "description": "Primary brand color (headings, strong text, table headers)."
+                },
+                "md2pdf.brand.colors.accent": {
+                    "type": "string",
+                    "default": "#3182ce",
+                    "format": "color",
+                    "description": "Accent color (links, blockquote borders, horizontal rules)."
+                },
+                "md2pdf.brand.colors.secondary": {
+                    "type": "string",
+                    "default": "#2c7a7b",
+                    "format": "color",
+                    "description": "Secondary color (H3 headings)."
+                },
+                "md2pdf.brand.colors.warning": {
+                    "type": "string",
+                    "default": "#c53030",
+                    "format": "color",
+                    "description": "Warning color."
+                },
+                "md2pdf.brand.colors.lightGrey": {
+                    "type": "string",
+                    "default": "#f7fafc",
+                    "format": "color",
+                    "description": "Light grey background (alternating table rows, blockquotes, inline code)."
+                },
+                "md2pdf.brand.colors.borderGrey": {
+                    "type": "string",
+                    "default": "#e2e8f0",
+                    "format": "color",
+                    "description": "Border grey (table borders, code block borders)."
+                },
+                "md2pdf.brand.font.family": {
+                    "type": "string",
+                    "default": "system-ui, -apple-system, sans-serif",
+                    "description": "Font family for the PDF body text."
+                },
+                "md2pdf.brand.font.url": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null,
+                    "description": "URL to import a web font (e.g., Google Fonts URL)."
+                },
+                "md2pdf.outputDirectory": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Directory for output PDFs. Leave empty to save next to the source file."
+                },
+                "md2pdf.timestampSuffix": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Append timestamp (YYYYMMDD-HHmm) to output filename."
+                }
+            }
         }
-      }
-    }
-  },
-  "scripts": {
-    "build": "node esbuild.mjs",
-    "watch": "node esbuild.mjs --watch",
-    "package": "vsce package"
-  },
-  "dependencies": {
-    "@md2pdf/core": "*",
-    "puppeteer-core": "^23.0.0"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^20.0.0",
-    "esbuild": "^0.21.0",
-    "typescript": "^5.4.0"
-  }
+    },
+    "scripts": {
+        "build": "node esbuild.mjs",
+        "watch": "node esbuild.mjs --watch",
+        "package": "vsce package"
+    },
+    "dependencies": {
+        "@md2pdf/core": "*",
+        "puppeteer-core": "^23.0.0"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/node": "^20.0.0",
+        "esbuild": "^0.21.0",
+        "typescript": "^5.4.0"
+    },
+    "license": "MIT"
 }
