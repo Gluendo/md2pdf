@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'Dockerfile'
-      - 'generate-pdfs.js'
+      - 'packages/core/**'
+      - 'packages/cli/**'
       - 'package.json'
       - 'brand.json'
       - 'themes/**'
+      - 'resources/**'
       - '.github/workflows/docker-build.yml'
   workflow_dispatch:
 

@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Run MD2PDF Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vscode/dist/**/*.js"
+            ],
+            "preLaunchTask": "build-vscode-extension"
+        }
+    ]
+}

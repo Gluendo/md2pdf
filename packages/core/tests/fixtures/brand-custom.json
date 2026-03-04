@@ -1,0 +1,9 @@
+{
+  "name": "Test Corp",
+  "header": "Test Corp Header",
+  "footer": "CONFIDENTIAL",
+  "colors": {
+    "primary": "#ff0000",
+    "accent": "#00ff00"
+  }
+}

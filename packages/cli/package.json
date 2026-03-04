@@ -1,0 +1,19 @@
+{
+  "name": "@md2pdf/cli",
+  "version": "0.1.0",
+  "description": "Markdown to PDF CLI tool",
+  "main": "dist/index.js",
+  "bin": {
+    "md2pdf": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@md2pdf/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}

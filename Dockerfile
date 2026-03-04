@@ -22,20 +22,25 @@ ENV CHROME_PATH=/usr/bin/chromium
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy workspace root and packages
 COPY package.json ./
-RUN npm install --only=production
+COPY packages/core/ packages/core/
+COPY packages/cli/ packages/cli/
 
-# Copy application files
-COPY generate-pdfs.js ./
+# Copy shared resources
 COPY brand.json ./
 COPY themes/ ./themes/
+COPY resources/ ./resources/
 
-# Create Puppeteer config for mermaid-cli
-RUN echo '{"executablePath": "/usr/bin/chromium", "protocolTimeout": 120000, "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]}' > /app/puppeteer-config.json
+# Install dependencies and build
+RUN npm install
+RUN npm run build -w packages/core && npm run build -w packages/cli
+
+# Copy mermaid.min.js from installed package into resources
+RUN cp node_modules/mermaid/dist/mermaid.min.js resources/mermaid.min.js
 
 # Set working directory for input docs
 WORKDIR /docs
 
-ENTRYPOINT ["node", "/app/generate-pdfs.js"]
+ENTRYPOINT ["node", "/app/packages/cli/dist/index.js"]
 CMD ["--help"]

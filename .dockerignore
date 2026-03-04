@@ -1,0 +1,9 @@
+node_modules
+packages/*/node_modules
+packages/*/dist
+packages/vscode
+.git
+.github
+*.md
+!README.md
+.claude
