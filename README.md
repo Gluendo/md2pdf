@@ -26,15 +26,10 @@ Output: `output/<filename>_YYYYMMDD-HHmm.pdf`
 
 ### VSCode Extension
 
-Install from [Open VSX](https://open-vsx.org/extension/gluendo/md2pdf) or from the command line:
+Install from [Open VSX](https://open-vsx.org/extension/gluendo/md2pdf):
 
-```bash
-# VSCode
-code --install-extension gluendo.md2pdf
-
-# VSCodium
-codium --install-extension gluendo.md2pdf
-```
+- **VSCodium**: Search "MD2PDF" in the extensions panel, or run `codium --install-extension gluendo.md2pdf`
+- **VSCode**: Download the `.vsix` from [Open VSX](https://open-vsx.org/extension/gluendo/md2pdf) and install with `code --install-extension md2pdf-*.vsix`
 
 The extension adds a **Convert Markdown to PDF** command accessible from:
 
