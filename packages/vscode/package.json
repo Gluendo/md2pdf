@@ -2,7 +2,7 @@
     "name": "md2pdf",
     "displayName": "MD2PDF",
     "description": "Convert Markdown to branded PDF with Mermaid diagram support",
-    "version": "0.1.0",
+    "version": "0.2.1",
     "publisher": "gluendo",
     "repository": {
         "type": "git",
