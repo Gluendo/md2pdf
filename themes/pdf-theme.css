@@ -197,6 +197,12 @@ table:first-of-type {
   margin-top: 0;
 }
 
+/* Images — constrain to page width */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Mermaid diagrams */
 svg {
   max-width: 100%;

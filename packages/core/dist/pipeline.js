@@ -50,6 +50,7 @@ async function convertMarkdownToPdf(options) {
     const { mdFilePath, outputPath, brand, chromePath, resourcesPath, themeCssPath, onProgress, cancelled } = options;
     let browser;
     let tempDir;
+    let copiedSvgs = [];
     let mermaidFailed = 0;
     const progress = (msg, pct) => onProgress?.(msg, pct);
     const checkCancelled = () => { if (cancelled?.())
@@ -76,8 +77,14 @@ async function convertMarkdownToPdf(options) {
             const result = await (0, mermaidProcessor_1.processMermaidDiagrams)(content, baseName, brand, browser, resourcesPath);
             content = result.content;
             tempDir = result.tempDir;
-            basedir = tempDir;
             mermaidFailed = result.failCount;
+            // Copy rendered mermaid SVGs from temp dir into the original markdown directory
+            // so the file server can serve both images and diagrams from the same root.
+            for (const file of fs.readdirSync(tempDir)) {
+                const dest = path.join(basedir, file);
+                fs.copyFileSync(path.join(tempDir, file), dest);
+                copiedSvgs.push(dest);
+            }
         }
         // Step 3: Convert markdown to HTML
         progress('Converting to HTML...', 40);
@@ -86,9 +93,7 @@ async function convertMarkdownToPdf(options) {
         // Step 4: Generate PDF
         progress('Generating PDF...', 60);
         checkCancelled();
-        const relativePath = tempDir
-            ? '.'
-            : path.relative(basedir, path.dirname(mdFilePath)) || '.';
+        const relativePath = path.relative(basedir, path.dirname(mdFilePath)) || '.';
         const { content: pdfContent, browser: usedBrowser } = await (0, pdfGenerator_1.generatePdf)(html, { chromePath, brand, basedir, relativePath, themeCssPath }, browser);
         browser = usedBrowser;
         // Step 5: Write output
@@ -105,6 +110,9 @@ async function convertMarkdownToPdf(options) {
         }
         if (tempDir) {
             fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+        for (const svg of copiedSvgs) {
+            fs.rmSync(svg, { force: true });
         }
     }
 }
