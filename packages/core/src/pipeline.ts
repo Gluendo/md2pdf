@@ -33,6 +33,7 @@ export async function convertMarkdownToPdf(options: ConvertOptions): Promise<Con
   const { mdFilePath, outputPath, brand, chromePath, resourcesPath, themeCssPath, onProgress, cancelled } = options;
   let browser: Browser | undefined;
   let tempDir: string | undefined;
+  let copiedSvgs: string[] = [];
   let mermaidFailed = 0;
 
   const progress = (msg: string, pct: number) => onProgress?.(msg, pct);
@@ -70,8 +71,15 @@ export async function convertMarkdownToPdf(options: ConvertOptions): Promise<Con
       );
       content = result.content;
       tempDir = result.tempDir;
-      basedir = tempDir;
       mermaidFailed = result.failCount;
+
+      // Copy rendered mermaid SVGs from temp dir into the original markdown directory
+      // so the file server can serve both images and diagrams from the same root.
+      for (const file of fs.readdirSync(tempDir)) {
+        const dest = path.join(basedir, file);
+        fs.copyFileSync(path.join(tempDir, file), dest);
+        copiedSvgs.push(dest);
+      }
     }
 
     // Step 3: Convert markdown to HTML
@@ -83,9 +91,7 @@ export async function convertMarkdownToPdf(options: ConvertOptions): Promise<Con
     progress('Generating PDF...', 60);
     checkCancelled();
 
-    const relativePath = tempDir
-      ? '.'
-      : path.relative(basedir, path.dirname(mdFilePath)) || '.';
+    const relativePath = path.relative(basedir, path.dirname(mdFilePath)) || '.';
 
     const { content: pdfContent, browser: usedBrowser } = await generatePdf(
       html,
@@ -108,6 +114,9 @@ export async function convertMarkdownToPdf(options: ConvertOptions): Promise<Con
     }
     if (tempDir) {
       fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+    for (const svg of copiedSvgs) {
+      fs.rmSync(svg, { force: true });
     }
   }
 }
